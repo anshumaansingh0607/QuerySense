@@ -76,8 +76,8 @@ class QueryAnalyticsEngine {
 
   /**
    * 3. Calculate Realistic System Intelligence Score
-   * Formula: success_rate (50%) + avg_execution_time (30%) + correction_rate (20%)
-   * Penalizes high latency and directly limits score based on overall efficiency.
+   * Formula: success_rate (60%) + self_healing_ability (25%) + speed_efficiency (15%)
+   * Uses logarithmic decay for speed and true self-healing ratio for correction ability.
    * 
    * @param {Object} metrics - System metrics object
    * @returns {number} Score out of 100
@@ -85,22 +85,27 @@ class QueryAnalyticsEngine {
   calculateSystemScore(metrics) {
     const { success_rate, avg_execution_time, correction_rate } = metrics;
     
-    // 50% from Success Rate
-    const successScore = (success_rate || 0) * 0.50;
+    // 60% from Success Rate (core reliability)
+    const successComponent = (success_rate || 0) / 100 * 60;
     
-    // 30% from Speed (Penalizing large spikes up to 17+ seconds)
-    // We treat 0ms as perfect (100% of the 30 points).
-    // Let's set the threshold where speed becomes 0 points at 10,000ms (10 seconds).
-    let speedPoints = 100 - ((avg_execution_time || 0) / 100); 
-    speedPoints = Math.max(0, Math.min(100, speedPoints));
-    const speedScore = speedPoints * 0.30;
+    // 25% from Self-Healing Ability
+    // Uses correction_rate as a proxy for healing ratio
+    // If no corrections needed, perfect score
+    const healingComponent = (correction_rate || 0) > 0
+      ? (correction_rate / 100) * 25
+      : 25; // No corrections needed = full marks
     
-    // 20% from Correction Rate (capability to self-heal)
-    // Normalizes successful corrections against total attempts.
-    const correctionScore = (correction_rate || 0) * 0.20;
+    // 15% from Speed Efficiency (logarithmic decay)
+    // 0-500ms = full points, 500-5000ms = partial, 5000ms+ = near zero
+    let speedRatio;
+    if ((avg_execution_time || 0) <= 500) {
+      speedRatio = 1.0;
+    } else {
+      speedRatio = Math.max(0, 1 - Math.log10(avg_execution_time / 500) / 2);
+    }
+    const speedComponent = speedRatio * 15;
     
-    // Total calculation
-    const totalScore = successScore + speedScore + correctionScore;
+    const totalScore = successComponent + healingComponent + speedComponent;
     
     return parseFloat(Math.min(100, Math.max(0, totalScore)).toFixed(1));
   }

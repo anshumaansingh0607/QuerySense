@@ -63,7 +63,7 @@ const Analytics = {
                     <div class="intelligence-score-card">
                         <div class="intelligence-label">
                             <span>🧠</span> System Intelligence Score
-                            <span class="analytics-tooltip" data-tooltip="Computed from: 60% success rate + 20% error avoidance + 20% self-healing ability">ⓘ</span>
+                            <span class="analytics-tooltip" data-tooltip="Computed from: 60% success rate + 25% self-healing ability + 15% speed efficiency">ⓘ</span>
                         </div>
                         <div class="intelligence-value" style="color:${scoreColor}">${data.intelligence_score}%</div>
                         <div class="intelligence-bar">

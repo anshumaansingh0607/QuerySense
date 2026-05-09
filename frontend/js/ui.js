@@ -121,6 +121,11 @@ const UI = {
         // Render data table
         this.renderDataTable(data.result, data.columns, data.row_count);
 
+        // Smart Auto-Visualization + Data Insights
+        if (typeof SmartViz !== 'undefined') {
+            SmartViz.render('viz-container', data.result, data.columns);
+        }
+
         // Render structured reasoning (replaces old explanation)
         this.renderStructuredReasoning(data);
 

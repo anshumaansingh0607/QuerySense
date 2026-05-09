@@ -46,13 +46,22 @@ async def lifespan(app: FastAPI):
     db_manager.register("sales_db", db_path)
     logger.info(f"  Database registered: sales_db -> {db_path}")
 
-    # 2. Determine LLM provider (auto-detect if API key present)
+    # 2. Determine LLM provider and resolve API key
     provider_name = settings.LLM_PROVIDER
-    api_key = settings.OPENAI_API_KEY or settings.ANTHROPIC_API_KEY
 
-    if provider_name == "mock" and settings.OPENAI_API_KEY:
-        logger.info("  OpenAI API key detected, but LLM_PROVIDER=mock. Using mock mode.")
-        logger.info("  Set LLM_PROVIDER=openai in .env to use OpenAI.")
+    # Pick the correct API key based on the configured provider
+    api_key = None
+    if provider_name == "openai":
+        api_key = settings.OPENAI_API_KEY
+    elif provider_name == "anthropic":
+        api_key = settings.ANTHROPIC_API_KEY
+    elif provider_name == "groq":
+        api_key = settings.GROQ_API_KEY
+
+    if provider_name in ("openai", "anthropic", "groq") and not api_key:
+        logger.warning(f"  {provider_name.upper()}_API_KEY not found in .env — falling back to mock mode.")
+        provider_name = "mock"
+        api_key = None
 
     llm = get_provider(
         provider_name,

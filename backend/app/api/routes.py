@@ -4,6 +4,7 @@ FastAPI endpoints for the NL-to-SQL pipeline with analytics.
 """
 
 import logging
+import math
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.models.schemas import (
@@ -341,18 +342,30 @@ async def get_analytics():
         for h in _history if h.get("corrections", 0) > 0
     ][-5:]  # Last 5
 
-    # System Intelligence Score
-    # 50% from Success Rate
-    success_score = success_rate * 0.50
-    # 30% from Speed (Penalizing large spikes up to 10,000ms)
-    speed_points = 100 - (avg_exec_time / 100)
-    speed_points = max(0, min(100, speed_points))
-    speed_score = speed_points * 0.30
-    # 20% from Correction Rate (capability to self-heal)
-    correction_score = correction_rate * 0.20
-    
-    total_score = success_score + speed_score + correction_score
-    intelligence_score = round(max(0, min(100, total_score)), 1)
+    # System Intelligence Score — weighted composite metric
+    # ── 60% from Success Rate (core reliability) ──
+    success_component = (success_rate / 100) * 60
+
+    # ── 25% from Self-Healing Ability ──
+    # Measures: of queries that NEEDED correction, how many succeeded?
+    # This is the true self-healing ratio, not corrections/total.
+    if queries_with_corrections > 0:
+        healing_ratio = successful_corrections / queries_with_corrections
+    else:
+        healing_ratio = 1.0  # No corrections needed = perfect
+    healing_component = healing_ratio * 25
+
+    # ── 15% from Speed Efficiency ──
+    # Uses logarithmic decay: fast queries score high, slow ones degrade gracefully
+    # 0-500ms = full points, 500-5000ms = partial, 5000ms+ = near zero
+
+    if avg_exec_time <= 500:
+        speed_ratio = 1.0
+    else:
+        speed_ratio = max(0, 1 - math.log10(avg_exec_time / 500) / 2)
+    speed_component = speed_ratio * 15
+
+    intelligence_score = round(min(100, max(0, success_component + healing_component + speed_component)), 1)
 
     return AnalyticsResponse(
         total_queries=total,

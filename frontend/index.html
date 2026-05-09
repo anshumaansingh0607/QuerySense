@@ -27,6 +27,7 @@
                 <div class="mode-selector" id="mode-selector">
                     <select class="mode-select" id="llm-mode-select" title="Switch LLM provider">
                         <option value="mock" selected>🧪 Demo Mode</option>
+                        <option value="groq">⚡ Groq</option>
                         <option value="openai">🤖 OpenAI</option>
                     </select>
                 </div>
@@ -121,6 +122,7 @@ Example: Show total revenue by region for completed orders"
 
                 <!-- Tab: Data -->
                 <div class="tab-content active" id="tab-data">
+                    <div id="viz-container"></div>
                     <div class="data-table-container" id="data-table-container">
                         <!-- Table rendered by JS -->
                     </div>
@@ -287,6 +289,7 @@ Example: Show total revenue by region for completed orders"
     <script src="/js/ui.js"></script>
     <script src="/js/features.js"></script>
     <script src="/js/er-diagram.js"></script>
+    <script src="/js/visualizer.js"></script>
     <script src="/js/analytics.js"></script>
     <script src="/js/app.js"></script>
 </body>
