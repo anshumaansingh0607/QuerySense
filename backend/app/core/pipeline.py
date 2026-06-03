@@ -235,6 +235,14 @@ class QueryPipeline:
         elapsed = self._elapsed(start_time)
         logger.info(f"[Pipeline] Complete: success={exec_result.success}, corrections={corrections}, time={elapsed}ms")
 
+        # ── Query Plan (EXPLAIN QUERY PLAN) ──
+        query_plan = None
+        if exec_result.success and sql:
+            try:
+                query_plan = self._execution_engine.explain(sql, engine)
+            except Exception as e:
+                logger.warning(f"[Pipeline] EXPLAIN QUERY PLAN failed: {e}")
+
         # ── Build Response ──
         return QueryResponse(
             success=exec_result.success,
@@ -255,6 +263,7 @@ class QueryPipeline:
             ambiguity_score=ambiguity_score,
             error=exec_result.error if not exec_result.success else None,
             execution_time_ms=elapsed,
+            query_plan=query_plan,
         )
 
     def _build_structured_reasoning(self, raw: dict) -> Optional[StructuredReasoning]:

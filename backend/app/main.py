@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from app.config import settings
 from app.api.routes import router, init_pipeline, set_llm_provider
 from app.db.database import db_manager
-from app.db.sample_data import create_sample_database  # noqa: drift simulation removed
+from app.db.sample_data import create_sample_database
 from app.core.schema_manager import schema_manager
 from app.core.pipeline import QueryPipeline
 from app.llm.provider import get_provider
@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
     pipeline = QueryPipeline(llm)
     init_pipeline(pipeline)
     set_llm_provider(llm)
-    logger.info(f"  Query pipeline initialized")
+    logger.info("  Query pipeline initialized")
     logger.info("=" * 60)
     logger.info(f"  Open http://localhost:{settings.PORT} in your browser")
     logger.info("=" * 60)
@@ -103,7 +103,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -115,8 +115,12 @@ app.include_router(router)
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
 
 if os.path.isdir(frontend_dir):
-    app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, "css")), name="css")
-    app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
+    css_dir = os.path.join(frontend_dir, "css")
+    js_dir = os.path.join(frontend_dir, "js")
+    if os.path.isdir(css_dir):
+        app.mount("/css", StaticFiles(directory=css_dir), name="css")
+    if os.path.isdir(js_dir):
+        app.mount("/js", StaticFiles(directory=js_dir), name="js")
 
 
 # ── Serve Frontend ──

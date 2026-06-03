@@ -25,9 +25,8 @@ const UI = {
             sqlCode: document.getElementById('sql-code'),
             dataTableContainer: document.getElementById('data-table-container'),
             rowCount: document.getElementById('row-count'),
-            explanationText: document.getElementById('explanation-text'),
-            assumptionsList: document.getElementById('assumptions-list'),
-            tablesUsedContainer: document.getElementById('tables-used-container'),
+            // Note: explanationText, assumptionsList, tablesUsedContainer
+            // are not in the HTML — reasoning uses reasoningContainer instead
             correctionSteps: document.getElementById('correction-steps'),
             correctionDiff: document.getElementById('correction-diff'),
             tabCorrections: document.getElementById('tab-corrections'),
@@ -460,7 +459,7 @@ const UI = {
     },
 
     formatExplanation(text) {
-        return text
+        return this.escapeHtml(text)
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/`(.+?)`/g, '<code style="background:var(--bg-tertiary);padding:1px 4px;border-radius:3px;font-family:var(--font-mono);font-size:0.85em;">$1</code>');
     },
@@ -637,9 +636,9 @@ const UI = {
         let html = '';
         history.forEach(entry => {
             html += `
-                <div class="history-item">
+                <div class="history-item" data-query="${this.escapeHtml(entry.query)}" style="cursor:pointer;" title="Click to rerun">
                     <div class="history-status ${entry.success ? 'success' : 'error'}"></div>
-                    <div style="flex:1; cursor:pointer;" onclick="app.rerunQuery('${this.escapeHtml(entry.query).replace(/'/g, "\\'")}')" title="Click to rerun: ${this.escapeHtml(entry.query)}">
+                    <div style="flex:1;">
                         <div class="history-text">${this.escapeHtml(entry.query)}</div>
                         <div class="history-meta">
                             ${this.formatTime(entry.timestamp)}
@@ -654,11 +653,20 @@ const UI = {
         const items = panel.querySelectorAll('.history-item');
         items.forEach(item => item.remove());
         panel.insertAdjacentHTML('afterbegin', html);
+
+        // Event delegation for history items (replaces inline onclick)
+        panel.querySelectorAll('.history-item[data-query]').forEach(item => {
+            item.addEventListener('click', () => {
+                const q = item.getAttribute('data-query');
+                if (q) app.rerunQuery(q);
+            });
+        });
     },
 
     formatTime(isoString) {
         try {
-            const date = new Date(isoString + 'Z');
+            const hasTz = isoString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(isoString);
+            const date = new Date(hasTz ? isoString : isoString + 'Z');
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } catch {
             return '';
@@ -702,7 +710,9 @@ const UI = {
     // ── Tab Switching ──
     switchTab(tabName) {
         document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabName);
+            const isActive = btn.dataset.tab === tabName;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', isActive.toString());
         });
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
@@ -733,26 +743,18 @@ const UI = {
                 this.el.btnCopySql.classList.remove('copied');
             }, 2000);
         } catch {
-            const textarea = document.createElement('textarea');
-            textarea.value = sqlText;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            this.el.btnCopySql.textContent = '✓ Copied!';
-            setTimeout(() => { this.el.btnCopySql.textContent = 'Copy'; }, 2000);
+            // Fallback: show the text for manual copy
+            this.el.btnCopySql.textContent = '⚠ Use Ctrl+C';
+            setTimeout(() => { this.el.btnCopySql.textContent = 'Copy'; }, 3000);
         }
     },
 
     // ── LLM Mode Selector ──
     updateModeDisplay(providerName, providerId) {
-        const modeEl = document.getElementById('llm-mode');
-        if (modeEl) {
-            if (providerId === 'mock') {
-                modeEl.textContent = 'Demo Mode';
-            } else {
-                modeEl.textContent = providerName || providerId;
-            }
+        // Update the select dropdown to match the current provider
+        const selectEl = document.getElementById('llm-mode-select');
+        if (selectEl && providerId) {
+            selectEl.value = providerId;
         }
     },
 };

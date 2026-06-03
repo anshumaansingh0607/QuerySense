@@ -40,7 +40,7 @@ const Analytics = {
         try {
             data = await api.getAnalytics();
         } catch (e) {
-            container.innerHTML = `<div style="text-align:center;padding:var(--space-8);color:var(--text-tertiary);">Failed to load analytics: ${e.message}</div>`;
+            container.innerHTML = `<div style="text-align:center;padding:var(--space-8);color:var(--text-tertiary);">Failed to load analytics: ${this._escapeHtml(e.message)}</div>`;
             return;
         }
 
@@ -271,6 +271,7 @@ const Analytics = {
         const chartW = w - padding.left - padding.right;
         const chartH = h - padding.top - padding.bottom;
 
+        if (!data) return;
         const labels = Object.keys(data);
         const values = Object.values(data).map(Number);
         
@@ -337,6 +338,7 @@ const Analytics = {
         const w = canvas.clientWidth;
         const h = canvas.clientHeight;
 
+        if (!data) return;
         const labels = Object.keys(data);
         const values = Object.values(data).map(Number);
 

@@ -3,6 +3,7 @@ QuerySense — API Routes
 FastAPI endpoints for the NL-to-SQL pipeline with analytics.
 """
 
+import asyncio
 import logging
 import math
 from fastapi import APIRouter, HTTPException
@@ -12,9 +13,6 @@ from app.models.schemas import (
     ClarificationAnswer,
     QueryResponse,
     SchemaStatusResponse,
-    TableInfo,
-    ColumnInfo,
-    HistoryEntry,
     AnalyticsResponse,
 )
 from app.core.pipeline import QueryPipeline
@@ -22,7 +20,7 @@ from app.core.schema_manager import schema_manager
 from app.db.database import db_manager
 from app.llm.provider import LLMProvider, get_provider
 from app.config import settings
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -72,7 +70,8 @@ async def submit_query(request: QueryRequest):
     logger.info(f"Processing query: '{request.query[:80]}'")
 
     try:
-        result = _pipeline.process_query(
+        result = await asyncio.to_thread(
+            _pipeline.process_query,
             query=request.query,
             db_id=request.db_id,
         )
@@ -92,7 +91,7 @@ async def submit_query(request: QueryRequest):
         "tables_used": result.tables_used,
         "execution_time_ms": result.execution_time_ms,
         "error": result.error,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
     # Keep history bounded
@@ -112,7 +111,8 @@ async def submit_clarification(answer: ClarificationAnswer):
     logger.info(f"Processing clarification for: '{answer.original_query[:60]}'")
 
     try:
-        result = _pipeline.process_query(
+        result = await asyncio.to_thread(
+            _pipeline.process_query,
             query=answer.original_query,
             db_id=answer.db_id,
             skip_ambiguity_check=True,
@@ -137,7 +137,7 @@ async def get_config():
 
     return {
         "current_provider": _llm.name if _llm else "unknown",
-        "provider_id": settings.LLM_PROVIDER,
+        "provider_id": settings.LLM_PROVIDER.lower() if settings.LLM_PROVIDER else "mock",
         "available_providers": available_providers,
         "max_retries": settings.MAX_RETRIES,
         "ambiguity_threshold": settings.AMBIGUITY_THRESHOLD,
@@ -160,13 +160,16 @@ async def switch_provider(request: ProviderSwitchRequest):
             elif provider_name == "anthropic":
                 api_key = settings.ANTHROPIC_API_KEY
             elif provider_name == "groq":
-                api_key = getattr(settings, "GROQ_API_KEY", None)
-
+                api_key = settings.GROQ_API_KEY
+        
         if provider_name in ("openai", "anthropic", "groq") and not api_key:
             raise HTTPException(
                 status_code=400,
                 detail=f"API key required for {provider_name}. Set it in .env or provide in request."
             )
+
+        # Update settings BEFORE resolving model so default_model picks the right one
+        settings.LLM_PROVIDER = provider_name
 
         new_llm = get_provider(
             provider_name,
@@ -177,9 +180,6 @@ async def switch_provider(request: ProviderSwitchRequest):
         # Replace pipeline with new provider
         _llm = new_llm
         _pipeline = QueryPipeline(new_llm)
-
-        # Update settings reference
-        settings.LLM_PROVIDER = provider_name
 
         logger.info(f"LLM provider switched to: {new_llm.name}")
         return {
@@ -218,7 +218,7 @@ async def get_schema_status(db_id: str = "sales_db"):
         ),
         baseline_hash=baseline["hash"] if baseline else None,
         changes=changes,
-        last_checked=datetime.utcnow().isoformat(),
+        last_checked=datetime.now(timezone.utc).isoformat(),
     )
 
 

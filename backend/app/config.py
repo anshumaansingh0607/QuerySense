@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     
     # --- Pipeline ---
     MAX_RETRIES: int = 3
-    AMBIGUITY_THRESHOLD: float = 0.85
+    AMBIGUITY_THRESHOLD: float = 0.65
     QUERY_TIMEOUT: int = 10  # seconds
 
     # --- Server ---
@@ -41,7 +41,9 @@ class Settings(BaseSettings):
 
     @property
     def default_model(self) -> str:
-        if self.LLM_MODEL:
+        if self.LLM_PROVIDER == "mock":
+            return "mock"
+        if self.LLM_MODEL and self.LLM_MODEL != "mock":
             return self.LLM_MODEL
         if self.LLM_PROVIDER == "openai":
             return "gpt-4o"
@@ -55,6 +57,7 @@ class Settings(BaseSettings):
         "env_file": os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
         "env_file_encoding": "utf-8",
         "extra": "ignore",
+        "frozen": False,
     }
 
 

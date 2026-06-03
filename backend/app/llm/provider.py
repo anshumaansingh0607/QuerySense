@@ -89,6 +89,8 @@ class AnthropicProvider(LLMProvider):
     @property
     def name(self) -> str:
         return f"Anthropic ({self._model})"
+
+
 class GroqProvider(LLMProvider):
     """Groq API provider."""
 
@@ -122,6 +124,8 @@ class GroqProvider(LLMProvider):
     @property
     def name(self) -> str:
         return f"Groq ({self._model})"
+
+
 class MockProvider(LLMProvider):
     """
     Pattern-based mock LLM for demo mode.
@@ -740,7 +744,7 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
             raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
         model = kwargs.get("model", "claude-3-5-sonnet-20241022")
         return AnthropicProvider(api_key=api_key, model=model)
-       # ADD THIS NEW BLOCK:
+
     elif provider_name == "groq":
         api_key = kwargs.get("api_key")
         if not api_key:
@@ -752,4 +756,4 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
         return MockProvider()
 
     else:
-        raise ValueError(f"Unknown LLM provider: {provider_name}. Use 'openai', 'anthropic', or 'mock'.")
+        raise ValueError(f"Unknown LLM provider: {provider_name}. Use 'openai', 'anthropic', 'groq', or 'mock'.")

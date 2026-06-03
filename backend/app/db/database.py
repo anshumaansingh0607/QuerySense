@@ -5,7 +5,7 @@ Manages SQLAlchemy engines and sessions for multiple named databases.
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import os
 
 
@@ -13,7 +13,7 @@ class DatabaseManager:
     """Registry of named database connections."""
 
     def __init__(self):
-        self._engines: Dict[str, any] = {}
+        self._engines: Dict[str, Any] = {}
         self._session_factories: Dict[str, sessionmaker] = {}
 
     def register(self, db_id: str, db_path: str) -> None:

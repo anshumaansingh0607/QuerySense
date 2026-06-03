@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy import inspect, Engine
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class SchemaManager:
@@ -71,7 +71,7 @@ class SchemaManager:
         self._baselines[db_id] = {
             "hash": schema_hash,
             "schema": schema,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
         return {
@@ -193,7 +193,7 @@ class SchemaManager:
             try:
                 from sqlalchemy import text
                 with engine.connect() as conn:
-                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM \"{table_name}\""))
                     row_count = result.scalar()
             except Exception:
                 row_count = None

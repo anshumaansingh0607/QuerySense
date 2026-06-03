@@ -5,7 +5,7 @@ Request/response schemas for the API layer.
 
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any, Dict
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # ── Request Models ──
@@ -123,7 +123,8 @@ class QueryResponse(BaseModel):
     clarification: Optional[ClarificationNeeded] = None
     error: Optional[str] = None
     execution_time_ms: Optional[float] = None
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    query_plan: Optional[List[Dict[str, Any]]] = None  # EXPLAIN QUERY PLAN output
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class SchemaStatusResponse(BaseModel):

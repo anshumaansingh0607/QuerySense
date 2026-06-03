@@ -38,7 +38,9 @@ const ExportManager = {
 
     toSQL(sql) {
         if (!sql) return;
-        const content = `-- QuerySense Generated SQL\n-- ${new Date().toISOString()}\n\n${sql}`;
+        const header = '-- QuerySense Generated SQL';
+        const timestamp = '-- ' + new Date().toISOString();
+        const content = header + '\n' + timestamp + '\n\n' + sql;
         this._download(content, 'querysense_query.sql', 'text/sql');
     },
 

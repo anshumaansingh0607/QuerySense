@@ -11,10 +11,11 @@ class QuerySenseAPI {
     /**
      * Submit a natural language query for SQL translation and execution.
      */
-    async submitQuery(query, dbId = 'sales_db') {
+    async submitQuery(query, dbId = 'sales_db', signal = null) {
         const response = await this._request('/api/query', {
             method: 'POST',
             body: JSON.stringify({ query, db_id: dbId }),
+            signal: signal,
         });
         return response;
     }
@@ -105,11 +106,14 @@ class QuerySenseAPI {
     async _request(path, options = {}) {
         const url = `${this.baseUrl}${path}`;
 
+        const headers = options.headers || {};
+        if (options.body && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const config = {
-            headers: {
-                'Content-Type': 'application/json',
-            },
             ...options,
+            headers,
         };
 
         try {
@@ -130,5 +134,4 @@ class QuerySenseAPI {
     }
 }
 
-// Global instance
 const api = new QuerySenseAPI();

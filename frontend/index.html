@@ -1,36 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="QuerySense — Intelligent NL-to-SQL with self-correction, schema drift detection, and reasoning transparency">
+    <meta name="theme-color" content="#0a0e1a">
     <title>QuerySense — Natural Language to SQL</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/index.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <!-- Load theme.js early to prevent flash of wrong theme -->
+    <script src="/js/theme.js"></script>
 </head>
 <body>
     <div class="app-container">
 
         <!-- ═══ Header ═══ -->
-        <header class="header" id="header">
-            <div class="header-brand">
-                <div class="logo" id="logo">Q</div>
-                <div class="brand-text">
-                    <h1>QuerySense</h1>
-                    <p>Natural Language → SQL with Self-Correction</p>
+        <header class="header" id="header" role="banner">
+            <div class="header-left">
+                <button class="mobile-menu-btn" id="btn-mobile-menu" aria-label="Toggle sidebar" title="Toggle sidebar">
+                    <span class="hamburger-icon">
+                        <span></span><span></span><span></span>
+                    </span>
+                </button>
+                <div class="header-brand">
+                    <div class="logo" id="logo">Q</div>
+                    <div class="brand-text">
+                        <h1>QuerySense</h1>
+                        <p>Natural Language → SQL with Self-Correction</p>
+                    </div>
                 </div>
             </div>
             <div class="header-badges">
                 <!-- LLM Mode Selector -->
                 <div class="mode-selector" id="mode-selector">
-                    <select class="mode-select" id="llm-mode-select" title="Switch LLM provider">
+                    <select class="mode-select" id="llm-mode-select" title="Switch LLM provider" aria-label="LLM Provider">
                         <option value="mock" selected>🧪 Demo Mode</option>
                         <option value="groq">⚡ Groq</option>
                         <option value="openai">🤖 OpenAI</option>
                     </select>
                 </div>
+                <!-- Theme Toggle -->
+                <button class="btn btn-icon btn-ghost theme-toggle" id="btn-theme-toggle" title="Switch to light mode" aria-label="Toggle dark/light mode">
+                    ☀️
+                </button>
                 <span class="badge badge-drift" id="badge-drift" title="Schema status">
                     <span class="badge-dot"></span>
                     <span id="drift-status">Schema OK</span>
@@ -39,10 +53,10 @@
         </header>
 
         <!-- ═══ Main Content ═══ -->
-        <main class="main-content">
+        <main class="main-content" role="main">
 
             <!-- Drift Alert Banner -->
-            <div class="drift-alert" id="drift-alert">
+            <div class="drift-alert" id="drift-alert" role="alert">
                 <span class="drift-alert-icon">⚠️</span>
                 <div class="drift-alert-content">
                     <div class="drift-alert-title">Schema Drift Detected</div>
@@ -74,9 +88,10 @@
 
 Example: Show total revenue by region for completed orders"
                         rows="3"
+                        aria-label="Natural language query input"
                     ></textarea>
                     <div class="query-actions">
-                        <button class="btn btn-icon btn-ghost voice-btn" id="btn-voice" type="button" title="Voice input">
+                        <button class="btn btn-icon btn-ghost voice-btn" id="btn-voice" type="button" title="Voice input" aria-label="Voice input">
                             🎤
                         </button>
                         <span class="query-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
@@ -111,17 +126,17 @@ Example: Show total revenue by region for completed orders"
 
             <!-- Results Section -->
             <section class="glass-card results-section hidden" id="results-section">
-                <div class="results-tabs" id="results-tabs">
-                    <button class="tab-button active" data-tab="data">📊 Data</button>
-                    <button class="tab-button" data-tab="sql">🔧 SQL</button>
-                    <button class="tab-button" data-tab="explanation">💡 Reasoning</button>
-                    <button class="tab-button" data-tab="corrections" id="tab-corrections">
+                <div class="results-tabs" id="results-tabs" role="tablist">
+                    <button class="tab-button active" data-tab="data" role="tab" aria-selected="true" aria-controls="tab-data">📊 Data</button>
+                    <button class="tab-button" data-tab="sql" role="tab" aria-selected="false" aria-controls="tab-sql">🔧 SQL</button>
+                    <button class="tab-button" data-tab="explanation" role="tab" aria-selected="false" aria-controls="tab-explanation">💡 Reasoning</button>
+                    <button class="tab-button" data-tab="corrections" id="tab-corrections" role="tab" aria-selected="false" aria-controls="tab-corrections-content">
                         🔄 Corrections <span class="correction-badge" id="correction-badge">0</span>
                     </button>
                 </div>
 
                 <!-- Tab: Data -->
-                <div class="tab-content active" id="tab-data">
+                <div class="tab-content active" id="tab-data" role="tabpanel">
                     <div id="viz-container"></div>
                     <div class="data-table-container" id="data-table-container">
                         <!-- Table rendered by JS -->
@@ -137,7 +152,7 @@ Example: Show total revenue by region for completed orders"
                 </div>
 
                 <!-- Tab: SQL -->
-                <div class="tab-content" id="tab-sql">
+                <div class="tab-content" id="tab-sql" role="tabpanel">
                     <div class="sql-block">
                         <div class="sql-block-header">
                             <span class="sql-block-label">Generated SQL</span>
@@ -148,14 +163,14 @@ Example: Show total revenue by region for completed orders"
                 </div>
 
                 <!-- Tab: Reasoning (Explainable AI) -->
-                <div class="tab-content" id="tab-explanation">
+                <div class="tab-content" id="tab-explanation" role="tabpanel">
                     <div class="reasoning-card">
                         <div id="reasoning-container"></div>
                     </div>
                 </div>
 
                 <!-- Tab: Corrections -->
-                <div class="tab-content" id="tab-corrections-content">
+                <div class="tab-content" id="tab-corrections-content" role="tabpanel">
                     <div class="correction-timeline" id="correction-timeline">
                         <div class="correction-header">
                             <span>🔄</span> Self-Correction History
@@ -166,13 +181,14 @@ Example: Show total revenue by region for completed orders"
                     <div id="correction-diff" style="margin-top: var(--space-4);"></div>
                 </div>
 
+
                 <!-- Stats Footer -->
                 <div class="stats-bar" style="margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);" id="result-stats">
                 </div>
             </section>
 
             <!-- Error Display -->
-            <div class="glass-card error-card hidden" id="error-section">
+            <div class="glass-card error-card hidden" id="error-section" role="alert">
                 <div class="error-title">
                     <span>❌</span> <span id="error-title-text">Query Failed</span>
                 </div>
@@ -191,7 +207,10 @@ Example: Show total revenue by region for completed orders"
         </main>
 
         <!-- ═══ Sidebar ═══ -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar" role="complementary">
+            <!-- Sidebar Overlay for mobile -->
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+            
             <!-- Schema Panel -->
             <div class="glass-card">
                 <div class="card-header">
@@ -202,7 +221,13 @@ Example: Show total revenue by region for completed orders"
                     <span class="badge badge-mode" id="db-badge" style="font-size: 10px;">sales_db</span>
                 </div>
                 <div class="schema-panel" id="schema-panel">
-                    <!-- Rendered by JS -->
+                    <!-- Loading skeleton -->
+                    <div class="skeleton-loader" id="schema-skeleton">
+                        <div class="skeleton-line skeleton-w80"></div>
+                        <div class="skeleton-line skeleton-w60"></div>
+                        <div class="skeleton-line skeleton-w90"></div>
+                        <div class="skeleton-line skeleton-w70"></div>
+                    </div>
                 </div>
                 <div class="sidebar-actions" style="margin-top: var(--space-4);">
                     <button class="sidebar-action-btn" id="btn-show-erd">
@@ -236,10 +261,10 @@ Example: Show total revenue by region for completed orders"
     </div>
 
     <!-- ═══ Clarification Modal ═══ -->
-    <div class="modal-overlay" id="clarification-modal">
+    <div class="modal-overlay" id="clarification-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-clarify">
         <div class="modal-content">
             <div class="modal-icon">🤔</div>
-            <h2 class="modal-title">Need Clarification</h2>
+            <h2 class="modal-title" id="modal-title-clarify">Need Clarification</h2>
             <p class="modal-description" id="modal-question">
                 Your query has some ambiguity. Could you provide more detail?
             </p>
@@ -260,11 +285,11 @@ Example: Show total revenue by region for completed orders"
     </div>
 
     <!-- ═══ ER Diagram Modal ═══ -->
-    <div class="modal-overlay" id="erd-modal">
+    <div class="modal-overlay" id="erd-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-erd">
         <div class="modal-content modal-large">
             <div class="modal-header-bar">
-                <h2 class="modal-title">🔗 Entity Relationship Diagram</h2>
-                <button class="btn btn-icon btn-ghost" id="btn-close-erd" title="Close">✕</button>
+                <h2 class="modal-title" id="modal-title-erd">🔗 Entity Relationship Diagram</h2>
+                <button class="btn btn-icon btn-ghost" id="btn-close-erd" title="Close" aria-label="Close ER Diagram">✕</button>
             </div>
             <p style="font-size: var(--text-xs); color: var(--text-tertiary); margin: calc(-1 * var(--space-4)) 0 var(--space-4) 0;">Drag tables to rearrange • Scroll to zoom • Drag empty space to pan • Double-click to reset</p>
             <div class="erd-container">
@@ -274,13 +299,33 @@ Example: Show total revenue by region for completed orders"
     </div>
 
     <!-- ═══ Analytics Modal ═══ -->
-    <div class="modal-overlay" id="analytics-modal">
+    <div class="modal-overlay" id="analytics-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-analytics">
         <div class="modal-content modal-large">
             <div class="modal-header-bar">
-                <h2 class="modal-title">📈 Analytics Dashboard</h2>
-                <button class="btn btn-icon btn-ghost" id="btn-close-analytics" title="Close">✕</button>
+                <h2 class="modal-title" id="modal-title-analytics">📈 Analytics Dashboard</h2>
+                <button class="btn btn-icon btn-ghost" id="btn-close-analytics" title="Close" aria-label="Close Analytics">✕</button>
             </div>
             <div id="analytics-container"></div>
+        </div>
+    </div>
+
+    <!-- ═══ API Key Modal ═══ -->
+    <div class="modal-overlay" id="apikey-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-apikey">
+        <div class="modal-content">
+            <div class="modal-icon">🔑</div>
+            <h2 class="modal-title" id="modal-title-apikey">Enter API Key</h2>
+            <p class="modal-description" id="apikey-modal-desc">Enter your API key to use this provider.</p>
+            <input 
+                type="password" 
+                class="modal-input" 
+                id="apikey-input" 
+                placeholder="sk-... or gsk_..."
+                autocomplete="off"
+            >
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="btn-apikey-cancel">Cancel</button>
+                <button class="btn btn-primary" id="btn-apikey-submit">Connect</button>
+            </div>
         </div>
     </div>
 

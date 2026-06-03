@@ -9,6 +9,8 @@ const app = {
     currentResult: null,
     isProcessing: false,
     schemaTablesCache: null,
+    _abortController: null,
+    _pendingProviderSwitch: null,
 
     // ── Initialization ──
     async init() {
@@ -16,11 +18,11 @@ const app = {
         VoiceInput.init();
         this.bindEvents();
         
-        // Load initial data
-        await this.loadSchemaPanel();
-        await this.loadHistory();
-        await this.checkHealth();
-        await this.loadConfig();
+        // Load initial data — don't break if one fails
+        try { await this.loadSchemaPanel(); } catch(e) { console.error('Schema load failed:', e); }
+        try { await this.loadHistory(); } catch(e) { console.error('History load failed:', e); }
+        try { await this.checkHealth(); } catch(e) { console.error('Health check failed:', e); }
+        try { await this.loadConfig(); } catch(e) { console.error('Config load failed:', e); }
     },
 
     // ── Event Binding ──
@@ -76,10 +78,27 @@ const app = {
                 UI.hideClarificationModal();
                 this.closeERDiagram();
                 this.closeAnalytics();
+                this.closeApiKeyModal();
+                this.closeSidebar();
             }
         });
 
+        // ── Theme toggle ──
+        const btnTheme = document.getElementById('btn-theme-toggle');
+        if (btnTheme) {
+            btnTheme.addEventListener('click', () => ThemeManager.toggle());
+        }
 
+        // ── Mobile sidebar toggle ──
+        const btnMenu = document.getElementById('btn-mobile-menu');
+        if (btnMenu) {
+            btnMenu.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => this.closeSidebar());
+        }
 
         // ── Voice ──
         const btnVoice = document.getElementById('btn-voice');
@@ -123,6 +142,36 @@ const app = {
             if (e.target.id === 'analytics-modal') this.closeAnalytics();
         });
 
+        // ── API Key Modal ──
+        const btnApiKeySubmit = document.getElementById('btn-apikey-submit');
+        const btnApiKeyCancel = document.getElementById('btn-apikey-cancel');
+        const apikeyInput = document.getElementById('apikey-input');
+        
+        if (btnApiKeySubmit) {
+            btnApiKeySubmit.addEventListener('click', () => this.submitApiKey());
+        }
+        if (btnApiKeyCancel) {
+            btnApiKeyCancel.addEventListener('click', () => this.closeApiKeyModal());
+        }
+        if (apikeyInput) {
+            apikeyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.submitApiKey();
+                }
+                if (e.key === 'Escape') {
+                    this.closeApiKeyModal();
+                }
+            });
+        }
+        
+        const apikeyModal = document.getElementById('apikey-modal');
+        if (apikeyModal) {
+            apikeyModal.addEventListener('click', (e) => {
+                if (e.target.id === 'apikey-modal') this.closeApiKeyModal();
+            });
+        }
+
         // ── LLM Mode Selector ──
         const modeSelect = document.getElementById('llm-mode-select');
         if (modeSelect) {
@@ -130,10 +179,37 @@ const app = {
         }
     },
 
+    // ── Mobile Sidebar ──
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const btn = document.getElementById('btn-mobile-menu');
+        
+        const isOpen = sidebar.classList.toggle('open');
+        overlay.classList.toggle('active', isOpen);
+        btn.classList.toggle('active', isOpen);
+    },
+
+    closeSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const btn = document.getElementById('btn-mobile-menu');
+        
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        if (btn) btn.classList.remove('active');
+    },
+
     // ── Query Submission ──
     async handleSubmit() {
         const query = UI.el.queryInput.value.trim();
         if (!query || this.isProcessing) return;
+
+        // Abort previous request if still running
+        if (this._abortController) {
+            this._abortController.abort();
+        }
+        this._abortController = new AbortController();
 
         this.currentQuery = query;
         this.isProcessing = true;
@@ -141,6 +217,10 @@ const app = {
         UI.showLoading('Analyzing your query...');
 
         // Pipeline stage indicators
+        this._stageTimeouts = this._stageTimeouts || [];
+        this._stageTimeouts.forEach(t => clearTimeout(t));
+        this._stageTimeouts = [];
+
         const stages = [
             { name: 'schema', delay: 200 },
             { name: 'ambiguity', delay: 500 },
@@ -150,7 +230,7 @@ const app = {
         ];
 
         stages.forEach(s => {
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 if (this.isProcessing) {
                     UI.updatePipelineStage(s.name, 'active');
                     const stageTexts = {
@@ -163,10 +243,11 @@ const app = {
                     UI.el.loadingText.textContent = stageTexts[s.name] || 'Processing...';
                 }
             }, s.delay);
+            this._stageTimeouts.push(t);
         });
 
         try {
-            const result = await api.submitQuery(query);
+            const result = await api.submitQuery(query, 'sales_db', this._abortController.signal);
 
             // Check if clarification is needed
             if (result.clarification && result.clarification.needs_clarification) {
@@ -194,9 +275,12 @@ const app = {
             await this.loadHistory();
 
         } catch (error) {
-            UI.showError(error.message);
+            if (error.name !== 'AbortError') {
+                UI.showError(error.message);
+            }
         } finally {
             this.isProcessing = false;
+            this._abortController = null;
         }
     },
 
@@ -267,9 +351,14 @@ const app = {
         try {
             const data = await api.getSchemaTables();
             this.schemaTablesCache = data.tables;
+            // Hide skeleton loader
+            const skeleton = document.getElementById('schema-skeleton');
+            if (skeleton) skeleton.style.display = 'none';
             UI.renderSchemaPanel(data.tables);
         } catch (error) {
             console.error('Failed to load schema:', error);
+            const skeleton = document.getElementById('schema-skeleton');
+            if (skeleton) skeleton.innerHTML = '<p style="color: var(--text-tertiary); font-size: var(--text-xs); padding: var(--space-3);">Failed to load schema</p>';
         }
     },
 
@@ -288,7 +377,6 @@ const app = {
         try {
             const data = await api.getHistory();
             UI.renderHistory(data.history);
-            Analytics.updateFromHistory(data.history);
         } catch (error) {
             console.error('Failed to load history:', error);
         }
@@ -336,14 +424,10 @@ const app = {
                 result = await api.switchProvider(provider, null);
             } catch (error) {
                 if (error.message.toLowerCase().includes('api key')) {
-                    const providerName = provider === 'openai' ? 'OpenAI' : provider.charAt(0).toUpperCase() + provider.slice(1);
-                    const apiKey = prompt(`Enter your ${providerName} API key:`);
-                    if (!apiKey || apiKey.trim() === '') {
-                        const select = document.getElementById('llm-mode-select');
-                        if (select) select.value = 'mock';
-                        return;
-                    }
-                    result = await api.switchProvider(provider, apiKey.trim());
+                    // Show API Key modal instead of window.prompt()
+                    this._pendingProviderSwitch = provider;
+                    this.showApiKeyModal(provider);
+                    return;
                 } else {
                     throw error;
                 }
@@ -354,10 +438,65 @@ const app = {
             }
         } catch (error) {
             console.error('Provider switch failed:', error);
-            // Reset select to previous value
             const select = document.getElementById('llm-mode-select');
             if (select) select.value = 'mock';
-            alert('Failed to switch provider: ' + error.message);
+            UI.showError('Failed to switch provider: ' + error.message);
+        }
+    },
+
+    // ── API Key Modal ──
+    showApiKeyModal(provider) {
+        const modal = document.getElementById('apikey-modal');
+        const desc = document.getElementById('apikey-modal-desc');
+        const input = document.getElementById('apikey-input');
+        
+        const providerName = provider === 'openai' ? 'OpenAI' : provider === 'groq' ? 'Groq' : provider.charAt(0).toUpperCase() + provider.slice(1);
+        desc.textContent = `Enter your ${providerName} API key to connect.`;
+        input.value = '';
+        input.placeholder = provider === 'groq' ? 'gsk_...' : 'sk-...';
+        
+        modal.classList.add('visible');
+        setTimeout(() => input.focus(), 200);
+    },
+
+    closeApiKeyModal() {
+        const modal = document.getElementById('apikey-modal');
+        modal.classList.remove('visible');
+        
+        // Reset provider select if we were switching
+        if (this._pendingProviderSwitch) {
+            const select = document.getElementById('llm-mode-select');
+            if (select) select.value = 'mock';
+            this._pendingProviderSwitch = null;
+        }
+    },
+
+    async submitApiKey() {
+        const input = document.getElementById('apikey-input');
+        const apiKey = input.value.trim();
+        
+        if (!apiKey) {
+            input.style.borderColor = 'var(--error)';
+            setTimeout(() => { input.style.borderColor = ''; }, 1500);
+            return;
+        }
+
+        const provider = this._pendingProviderSwitch;
+        this.closeApiKeyModal();
+        this._pendingProviderSwitch = null;
+
+        try {
+            const result = await api.switchProvider(provider, apiKey);
+            if (result.status === 'switched') {
+                UI.updateModeDisplay(result.provider, result.provider_id);
+                const select = document.getElementById('llm-mode-select');
+                if (select) select.value = provider;
+            }
+        } catch (error) {
+            console.error('Provider switch with key failed:', error);
+            const select = document.getElementById('llm-mode-select');
+            if (select) select.value = 'mock';
+            UI.showError('Failed to connect: ' + error.message);
         }
     },
 
