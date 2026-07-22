@@ -12,19 +12,19 @@ QuerySense is a sophisticated AI-powered system that translates plain English qu
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 🧠 **Smart NL-to-SQL Generation**: Ask complex questions in plain English and get highly optimized, accurate SQL queries in return.
-- 🔄 **Self-Correction Engine**: If a generated query fails (e.g., syntax error, invalid column), the engine automatically captures the database error context, passes it back to the LLM, and self-corrects the query autonomously.
-- 🛡️ **Schema Drift Detection**: Constantly monitors the database schema using hash-based fingerprinting. If the underlying database structure changes, the system detects the "drift", alerts the user, and re-introspects the schema to maintain accuracy.
-- 🚦 **Ambiguity Scoring & Thresholding**: Enforces strict ambiguity checks. Vague or incomplete queries trigger a clarification request before attempting to generate potentially destructive or incorrect SQL.
-- 💬 **Conversational Context**: Maintains memory of the session, allowing users to ask follow-up questions (e.g., "now filter that by last month") seamlessly.
-- 📊 **Query Analytics Engine**: Provides rich telemetry on query performance, categorization, token usage, and system intelligence scores.
-- 🔍 **Reasoning Transparency**: Every generated SQL query is accompanied by a plain-English explanation of the steps taken to arrive at that logic.
+-  **Smart NL-to-SQL Generation**: Ask complex questions in plain English and get highly optimized, accurate SQL queries in return.
+-  **Self-Correction Engine**: If a generated query fails (e.g., syntax error, invalid column), the engine automatically captures the database error context, passes it back to the LLM, and self-corrects the query autonomously.
+-  **Schema Drift Detection**: Constantly monitors the database schema using hash-based fingerprinting. If the underlying database structure changes, the system detects the "drift", alerts the user, and re-introspects the schema to maintain accuracy.
+-  **Ambiguity Scoring & Thresholding**: Enforces strict ambiguity checks. Vague or incomplete queries trigger a clarification request before attempting to generate potentially destructive or incorrect SQL.
+-  **Conversational Context**: Maintains memory of the session, allowing users to ask follow-up questions (e.g., "now filter that by last month") seamlessly.
+-  **Query Analytics Engine**: Provides rich telemetry on query performance, categorization, token usage, and system intelligence scores.
+-  **Reasoning Transparency**: Every generated SQL query is accompanied by a plain-English explanation of the steps taken to arrive at that logic.
 
 ---
 
-## 🏗️ Architecture Flow
+##  Architecture Flow
 
 ```mermaid
 graph TD
@@ -42,7 +42,7 @@ graph TD
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Clone the Repository
 ```bash
@@ -84,7 +84,7 @@ Then, open `frontend/index.html` in your web browser.
 
 ---
 
-## 📖 API Reference
+##  API Reference
 
 ### Core Endpoints
 
@@ -115,7 +115,7 @@ Then, open `frontend/index.html` in your web browser.
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/anshumaansingh0607/QuerySense/issues).
 
@@ -127,6 +127,6 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
